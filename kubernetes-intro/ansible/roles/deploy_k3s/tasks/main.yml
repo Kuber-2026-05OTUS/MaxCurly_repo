@@ -1,0 +1,6 @@
+---
+# tasks file for deploy_k3s
+
+- name: deploy k3s via install script from official documentation
+  ansible.builtin.shell:
+    cmd: curl -sfL https://get.k3s.io | sh - 

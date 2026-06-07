@@ -1,0 +1,3 @@
+inventory_roles:
+  - deploy_k3s
+  - deploy_app

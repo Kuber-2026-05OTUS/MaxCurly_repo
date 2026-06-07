@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-default-conf
+  namespace: homework
+data:
+
+  default.conf: |
+    server {
+        listen       8000;
+        listen  [::]:8000;
+        server_name  localhost;
+    
+        #access_log  /var/log/nginx/host.access.log  main;
+    
+        location / {
+            root   /homework;
+            index  index.html index.htm;
+        }
+    
+        #error_page  404              /404.html;
+    
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+    
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+    
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+    
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod
+  namespace: homework
+  labels:
+    app.kubernetes.io/name: pod
+spec:
+
+  initContainers:
+    - name: busybox-init-container
+      image: busybox:1.38.0
+      command:
+        - /bin/sh
+        - -c
+        - wget -O /init/index.html https://example.com
+      volumeMounts:
+        - name: mount
+          mountPath: /init
+
+  containers:
+    - name: nginx-container
+      image: nginx:1.31.1
+      ports:
+        - containerPort: 8000
+      volumeMounts:
+        - name: mount
+          mountPath: /homework
+        - name: config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+      lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - rm -f /homework/index.html
+
+  volumes:
+    - name: mount
+      emptyDir: {}
+    - name: config
+      configMap:
+        name: nginx-default-conf
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-service
+  namespace: homework
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: pod
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30080
