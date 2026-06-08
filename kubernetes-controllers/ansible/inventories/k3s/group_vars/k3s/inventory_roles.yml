@@ -1,0 +1,3 @@
+inventory_roles:
+  - deploy_node_lables
+  - deploy_app
