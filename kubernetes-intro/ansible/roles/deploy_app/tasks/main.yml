@@ -1,0 +1,30 @@
+---
+# tasks file for deploy_app
+
+- name: create project directory
+  ansible.builtin.file:
+    path: /opt/kuber-2026-05_homework/kubernetes-intro
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy all k8s manifests for project
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/opt/kuber-2026-05_homework/kubernetes-intro/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "namespace.yaml", dest: "namespace.yaml", mode: "0644" }
+    - { src: "pod.yaml", dest: "pod.yaml", mode: "0644" }
+
+
+- name: deploy namespace.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-intro/namespace.yaml
+
+- name: deploy pod.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-intro/pod.yaml

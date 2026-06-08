@@ -1,0 +1,12 @@
+---
+# main playbook for deploy/restore "local_project" infrastructure
+
+- name: main playbook for deploy/restore "local_project" infrastructure
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: main task to run roles dinamicaly, besed on inventory vars
+      include_role:
+        name: "{{ item }}"
+      loop: "{{ inventory_roles }}"

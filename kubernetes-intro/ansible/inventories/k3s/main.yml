@@ -1,0 +1,9 @@
+all:
+  children:
+    k3s:
+      hosts:
+        k3s.local:
+
+  hosts:
+    k3s.local:
+      ansible_host: 10.10.5.100
