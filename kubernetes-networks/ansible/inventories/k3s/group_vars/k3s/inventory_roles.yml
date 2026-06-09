@@ -1,0 +1,3 @@
+inventory_roles:
+  - enable_gateway-api
+  - deploy_app

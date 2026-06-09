@@ -1,0 +1,7 @@
+---
+# handlers file for enable_gateway-api
+
+- name: restart_k3s
+  ansible.builtin.service:
+    name: k3s
+    state: restarted
