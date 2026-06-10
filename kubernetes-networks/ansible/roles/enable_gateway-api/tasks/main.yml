@@ -1,0 +1,24 @@
+---
+# tasks file for enable_gateway-api
+
+- name: Copy all k8s manifests for project
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/var/lib/rancher/k3s/server/manifests/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "k3s-traefik-config.yaml", dest: "k3s-traefik-config.yaml", mode: "0600" }
+  notify: restart_k3s
+
+- name: deploy k3s-traefik-config.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /var/lib/rancher/k3s/server/manifests/k3s-traefik-config.yaml
+
+- name: wait for 1 minute
+  ansible.builtin.pause:
+    minutes: 1
+
+- name: run handlers
+  ansible.builtin.meta: flush_handlers
