@@ -1,0 +1,64 @@
+---
+# tasks file for deploy_app
+
+- name: create project directory
+  ansible.builtin.file:
+    path: /opt/kuber-2026-05_homework/kubernetes-volumes
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy all k8s manifests for project
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/opt/kuber-2026-05_homework/kubernetes-volumes/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "namespace.yaml", dest: "namespace.yaml", mode: "0644" }
+    - { src: "deployment.yaml", dest: "deployment.yaml", mode: "0644" }
+    - { src: "service.yaml", dest: "service.yaml", mode: "0644" }
+    - { src: "gatewayclass.yaml", dest: "gatewayclass.yaml", mode: "0644" }
+    - { src: "gateway.yaml", dest: "gateway.yaml", mode: "0644" }
+    - { src: "httpRoute.yaml", dest: "httpRoute.yaml", mode: "0644" }
+    - { src: "pvc.yaml", dest: "pvc.yaml", mode: "0644" }
+    - { src: "cm.yaml", dest: "cm.yaml", mode: "0644" }
+    - { src: "storageClass.yaml", dest: "storageClass.yaml", mode: "0644" }
+
+- name: deploy namespace.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/namespace.yaml
+
+- name: deploy storageClass.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/storageClass.yaml
+
+- name: deploy deployment.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/deployment.yaml
+
+- name: deploy service.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/service.yaml
+
+- name: deploy gatewayclass.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/gatewayclass.yaml
+
+- name: deploy gateway.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/gateway.yaml
+
+- name: deploy httpRoute.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/httpRoute.yaml
+
+- name: deploy pvc.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/pvc.yaml
+
+- name: deploy cm.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-volumes/cm.yaml
