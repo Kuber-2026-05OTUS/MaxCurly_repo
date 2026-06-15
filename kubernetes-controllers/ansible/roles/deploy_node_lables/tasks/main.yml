@@ -1,0 +1,6 @@
+---
+# tasks file for deploy_node_lables
+
+- name: deploy label for nodes
+  ansible.builtin.shell:
+    cmd: kubectl label nodes k3s homework=true
