@@ -1,0 +1,107 @@
+---
+# tasks file for deploy_app
+
+- name: create project directory
+  ansible.builtin.file:
+    path: /opt/kuber-2026-05_homework/kubernetes-security
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy all k8s manifests for project
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/opt/kuber-2026-05_homework/kubernetes-security/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "namespace.yaml", dest: "namespace.yaml", mode: "0644" }
+    - { src: "sa-monitoring.yaml", dest: "sa-monitoring.yaml", mode: "0644" }
+    - { src: "sa-cd.yaml", dest: "sa-cd.yaml", mode: "0644" }
+    - { src: "pvc.yaml", dest: "pvc.yaml", mode: "0644" }
+    - { src: "cm.yaml", dest: "cm.yaml", mode: "0644" }
+    - { src: "storageClass.yaml", dest: "storageClass.yaml", mode: "0644" }
+    - { src: "deployment.yaml", dest: "deployment.yaml", mode: "0644" }
+    - { src: "service.yaml", dest: "service.yaml", mode: "0644" }
+    - { src: "gatewayclass.yaml", dest: "gatewayclass.yaml", mode: "0644" }
+    - { src: "gateway.yaml", dest: "gateway.yaml", mode: "0644" }
+    - { src: "httpRoute.yaml", dest: "httpRoute.yaml", mode: "0644" }
+
+- name: deploy namespace.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/namespace.yaml
+
+- name: deploy sa-monitoring.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/sa-monitoring.yaml
+
+- name: deploy sa-cd.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/sa-cd.yaml
+
+- name: create token for service account cd in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl create token cd -n homework --duration=24h0m0s > /opt/kuber-2026-05_homework/kubernetes-security/sa-cd_token
+
+- name: get "/opt/kuber-2026-05_homework/kubernetes-security/sa-cd_token" value
+  ansible.builtin.shell:
+    cmd: cat /opt/kuber-2026-05_homework/kubernetes-security/sa-cd_token
+  register: cd_token_value
+
+- name: set token value to fact
+  set_fact:
+    cd_token: "{{ cd_token_value.stdout | trim }}"
+
+- name: template cd-kubeconfig.yaml.j2 to "/opt/kuber-2026-05_homework/kubernetes-security/cd-kubeconfig.yaml"
+  ansible.builtin.template:
+    src: cd-kubeconfig.yaml.j2
+    dest: /opt/kuber-2026-05_homework/kubernetes-security/cd-kubeconfig.yaml
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: fetch file "/opt/kuber-2026-05_homework/kubernetes-security/sa-cd_token" to ansible-controller
+  ansible.builtin.fetch:
+    src: /opt/kuber-2026-05_homework/kubernetes-security/sa-cd_token
+    dest: ./token
+    flat: yes
+
+- name: fetch file "/opt/kuber-2026-05_homework/kubernetes-security/cd-kubeconfig.yaml" to ansible-controller
+  ansible.builtin.fetch:
+    src: /opt/kuber-2026-05_homework/kubernetes-security/cd-kubeconfig.yaml
+    dest: ./cd-kubeconfig.yaml
+    flat: yes
+
+- name: deploy storageClass.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/storageClass.yaml
+
+- name: deploy pvc.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/pvc.yaml
+
+- name: deploy cm.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/cm.yaml
+
+- name: deploy deployment.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/deployment.yaml
+
+- name: deploy service.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/service.yaml
+
+- name: deploy gatewayclass.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/gatewayclass.yaml
+
+- name: deploy gateway.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/gateway.yaml
+
+- name: deploy httpRoute.yaml in k3s cluster
+  ansible.builtin.shell:
+    cmd: kubectl apply -f /opt/kuber-2026-05_homework/kubernetes-security/httpRoute.yaml

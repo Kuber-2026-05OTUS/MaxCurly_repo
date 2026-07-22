@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-conf
+  namespace: homework
+data:
+  file: |
+    key1: value1
+    key2: value2
+    key3: value3
