@@ -1,0 +1,12 @@
+apiVersion: v2
+name: my-app
+description: A Helm chart for kubernetes-templating homework
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: valkey
+    condition: valkey.enabled
+    version: "0.10.0"
+    repository: "https://valkey-io.github.io/valkey-helm/"
