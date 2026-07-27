@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubernetes-monitoring-monitor
+  namespace: monitoring
+  labels:
+    app: kubernetes-monitoring
+    release: prometheus-operator
+spec:
+  selector:
+    matchLabels:
+      app: kubernetes-monitoring
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - homework
