@@ -1,0 +1,12 @@
+apiVersion: otus.homework/v1
+kind: MySQL
+metadata:
+  name: custom-resource-mysql
+  namespace: default
+  labels:
+    app: mysql
+spec:
+  image: mysql:8.0.35
+  database: db
+  password: Passw0rd
+  storage_size: 10Gi

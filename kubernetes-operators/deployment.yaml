@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-operators
+  namespace: homework
+  labels:
+    app: kubernetes-operators
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubernetes-operators
+  template:
+    metadata:
+      labels:
+        app: kubernetes-operators
+    spec:
+      serviceAccountName: service-account-crd
+      containers:
+        - name: roflmaoinmysoul-mysql-operator
+          image: roflmaoinmysoul/mysql-operator:1.0.0
