@@ -1,0 +1,38 @@
+namespace                    : homework
+serviceAccountName           : monitoring
+app_label                    : kubernetes-templating
+replicas                     : 3
+service_port                 : 8000
+main_container_port          : 8000
+nginx_server_name            : localhost
+hostname                     : "homework.otus"
+init_container_name          : busybox-init-container
+init_container_image         : busybox
+init_container_image_version : 1.38.0
+main_container_name          : nginx-container
+main_container_image         : nginx
+main_container_image_version : 1.31.1
+
+probes :
+  enabled   : true
+  readiness :
+    enabled             : true
+    path                : /index.html
+    port                : 8000
+    initialDelaySeconds : 5
+    periodSeconds       : 5
+    timeoutSeconds      : 2
+    failureThreshold    : 3
+    successThreshold    : 1
+  liveness  :
+    enabled             : true
+    path                : /index.html
+    port                : 8000
+    initialDelaySeconds : 15
+    periodSeconds       : 10
+    timeoutSeconds      : 2
+    failureThreshold    : 3
+    successThreshold    : 1
+
+valkey :
+  enabled : true

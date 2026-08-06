@@ -1,0 +1,164 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-nginx-default-conf
+  namespace: {{ .Values.namespace }}
+data:
+  default.conf: |
+    server {
+        listen       {{ .Values.main_container_port }};
+        listen  [::]:{{ .Values.main_container_port }};
+        server_name  {{ .Values.nginx_server_name }};
+    
+        #access_log  /var/log/nginx/host.access.log  main;
+    
+        location / {
+            root   /homework;
+            index  index.html index.htm;
+        }
+        location /conf/file {
+            alias /homework/conf/file;
+            default_type text/plain;
+        }
+
+        location = /metrics.html {
+            root /homework;
+            allow all;
+            default_type text/html;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Pragma "no-cache";
+            add_header Expires "0";
+        }
+
+        #error_page  404              /404.html;
+    
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+    
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+    
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+    
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.app_label }}
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app_label }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app_label }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      initContainers:
+        - name: {{ .Values.init_container_name}}
+          image: {{ .Values.init_container_image}}:{{ .Values.init_container_image_version}}
+          command:
+            - sh
+            - -c
+            - |
+              TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              APISERVER="https://kubernetes.default.svc.cluster.local"
+              
+              wget -O /init/index.html https://example.com
+              
+              wget --no-check-certificate \
+                   --header="Authorization: Bearer $TOKEN" \
+                   --header="Accept: text/html" \
+                   --timeout=30 \
+                   -O /init/metrics.html \
+                   "${APISERVER}/metrics"
+          volumeMounts:
+            - name: mount
+              mountPath: /init
+      containers:
+        - name: {{ .Values.main_container_name }}
+          image: {{ .Values.main_container_image }}:{{ .Values.main_container_image_version }}
+          ports:
+            - containerPort: {{ .Values.main_container_port }}
+          volumeMounts:
+            - name: mount
+              mountPath: /homework
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: config2
+              mountPath: /homework/conf
+          lifecycle:
+                preStop:
+                  exec:
+                    command:
+                    - /bin/sh
+                    - -c
+                    - rm -f /homework/index.html
+          {{- if .Values.probes.enabled }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: {{ .Values.probes.readiness.port }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: {{ .Values.probes.liveness.port }}
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            successThreshold: {{ .Values.probes.liveness.successThreshold }}
+          {{- end }}
+          {{- end }}
+      volumes:
+        - name: mount
+          persistentVolumeClaim:
+            claimName: kubernetes-volumes-pvc
+        - name: config
+          configMap:
+            name: {{ .Chart.Name }}-nginx-default-conf
+        - name: config2
+          configMap:
+            name: {{ .Chart.Name }}-example-conf
