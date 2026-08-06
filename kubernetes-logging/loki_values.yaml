@@ -1,0 +1,68 @@
+defaults:
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "infra"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    node-role: "infra"
+
+deploymentMode: Monolithic
+
+Monolithic:
+  replicas: 1
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: "2026-08-05"
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  storage:
+    type: s3
+    bucketNames:
+      chunks: k8s-s3
+      ruler: k8s-s3
+      admin: k8s-s3
+    s3:
+      endpoint: storage.yandexcloud.net
+      region: ru-central1
+      accessKeyId: "accessKeyId"
+      secretAccessKey: "secretAccessKey"
+      s3ForcePathStyle: true
+      insecure: false
+
+minio:
+  enabled: false
+
+lokiCanary:
+  enabled: false
+
+test:
+  enabled: false
+
+chunksCache:
+  enabled: false
+
+resultsCache:
+  enabled: false
+
+backend:
+  replicas: 0
+
+read:
+  replicas: 0
+
+write:
+  replicas: 0
+
+gateway:
+  replicas: 0
