@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-templating
+  namespace: argocd
+spec:
+  project: otus
+  source:
+    repoURL: https://github.com/Kuber-2026-05OTUS/MaxCurly_repo.git
+    targetRevision: HEAD
+    path: kubernetes-templating/my-app
+    helm:
+      parameters:
+      - name: "replicas"
+        value: "1"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homeworkhelm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

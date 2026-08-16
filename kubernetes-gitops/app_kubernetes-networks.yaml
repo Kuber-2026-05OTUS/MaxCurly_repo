@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-networks
+  namespace: argocd
+spec:
+  project: otus
+  source:
+    repoURL: https://github.com/Kuber-2026-05OTUS/MaxCurly_repo.git
+    targetRevision: HEAD
+    path: kubernetes-networks/ansible/roles/deploy_app/files
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homework
