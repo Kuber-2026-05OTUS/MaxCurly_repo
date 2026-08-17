@@ -1,0 +1,13 @@
+global:
+
+  image:
+    tag: "v3.1.16"
+
+  nodeSelector:
+    node-role: "infra"
+
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "infra"
+      effect: "NoSchedule"

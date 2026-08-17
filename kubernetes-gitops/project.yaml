@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: otus
+  namespace: argocd
+spec:
+  description: Project
+  sourceRepos:
+    - "https://github.com/Kuber-2026-05OTUS/MaxCurly_repo.git"
+  destinations:
+    - namespace: "*"
+      server: "https://kubernetes.default.svc"
