@@ -1,0 +1,22 @@
+all:
+  children:
+    k8s:
+      children:
+        k8s-master:
+          hosts:
+            k8s-master-01:
+        k8s-worker:
+          hosts:
+            k8s-worker-01:
+            k8s-worker-02:
+            k8s-worker-03:
+
+  hosts:
+    k8s-master-01:
+      ansible_host: 111.88.242.2
+    k8s-worker-01:
+      ansible_host: 111.88.252.234
+    k8s-worker-02:
+      ansible_host: 111.88.246.85
+    k8s-worker-03:
+      ansible_host: 84.252.128.208

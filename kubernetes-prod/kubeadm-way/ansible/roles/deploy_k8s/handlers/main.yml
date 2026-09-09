@@ -1,0 +1,7 @@
+---
+# handlers file for deploy_k8s
+
+- name: restart_containerd
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
