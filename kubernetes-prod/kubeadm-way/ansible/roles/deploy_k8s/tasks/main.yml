@@ -1,0 +1,136 @@
+---
+# tasks file for deploy_k8s
+
+- name: disable swap
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: remove swap entry from /etc/fstab
+  ansible.posix.mount:
+    name: swap
+    fstype: swap
+    state: absent
+
+- name: configure sysctl
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: 'net.ipv4.ip_forward', value: '1' }
+
+- name: load kernel modules
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install containerd
+  ansible.builtin.apt:
+    name: containerd.io
+    update_cache: yes
+    state: present
+
+- name: Configure containerd
+  ansible.builtin.copy:
+    dest: /etc/containerd/config.toml
+    content: |
+      version = 2
+      [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc]
+        [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
+          SystemdCgroup = true
+  notify: restart_containerd
+
+- name: Flush handlers to restart containerd NOW
+  ansible.builtin.meta: flush_handlers
+
+- name: start containerd
+  ansible.builtin.systemd:
+    name: containerd
+    state: started
+    enabled: yes
+
+- name: add Kubernetes GPG key
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.36/deb/ /"
+    state: present
+    filename: kubernetes.list
+
+- name: install k8s components
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    update_cache: yes
+    state: present
+
+- name: Init cluster on master
+  block:
+    - name: Init kubeadm
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Setup kubectl
+      shell: |
+        mkdir -p /root/.kube
+        cp /etc/kubernetes/admin.conf /root/.kube/config
+
+    - name: Install Flannel
+      shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
+  when: inventory_hostname in groups['k8s-master']
+
+- name: Generate join command on master
+  block:
+    - name: Get join command and save to file
+      ansible.builtin.shell:
+        cmd: kubeadm token create --print-join-command | tee /tmp/join-command.txt
+      register: join_command
+
+    - name: Debug - show join command
+      debug:
+        msg: "Join command saved: {{ join_command.stdout }}"
+
+  when: inventory_hostname in groups['k8s-master']
+
+
+- name: Generate join command on master
+  block:
+    - name: Read join command from master file
+      ansible.builtin.slurp:
+        src: /tmp/join-command.txt
+      delegate_to: k8s-master-01
+      register: join_file
+
+    - name: Set join command
+      ansible.builtin.set_fact:
+        join_command: "{{ join_file.content | b64decode | trim }}"
+
+    - name: Join worker
+      ansible.builtin.shell:
+        cmd: "{{ join_command }}"
+      register: join_result
+      changed_when: "'This node has joined the cluster' in join_result.stdout"
+      failed_when: false
+
+  when: inventory_hostname in groups['k8s-worker']

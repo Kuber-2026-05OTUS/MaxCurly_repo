@@ -1,0 +1,36 @@
+Обновление мастера:
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.37/deb/ /' >> /etc/apt/sources.list.d/kubernetes.list.list
+apt update
+apt install --only-upgrade kubeadm=1.37.0-1.1
+kubeadm upgrade plan
+kubeadm upgrade apply v1.37.0
+apt install --only-upgrade kubelet kubectl
+
+
+
+
+Обновление воркеров:
+
+
+На мастере (поочередно для каждого из воркеров):
+
+kubectl cordon k8s-worker-01
+kubectl drain k8s-worker-01 --ignore-daemonsets --delete-emptydir-data
+kubectl uncordon k8s-worker-01 (после обновления воркера)
+
+kubectl cordon k8s-worker-02
+kubectl drain k8s-worker-02 --ignore-daemonsets --delete-emptydir-data
+kubectl uncordon k8s-worker-02 (после обновления воркера)
+
+kubectl cordon k8s-worker-03
+kubectl drain k8s-worker-03 --ignore-daemonsets --delete-emptydir-data
+kubectl uncordon k8s-worker-03 (после обновления воркера)
+
+
+На воркерах:
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.37/deb/ /' >> /etc/apt/sources.list.d/kubernetes.list.list
+apt update
+apt install --only-upgrade kubeadm=1.37.0-1.1
+kubeadm upgrade node
+apt install --only-upgrade kubelet kubectl
